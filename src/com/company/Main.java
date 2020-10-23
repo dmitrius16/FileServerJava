@@ -5,6 +5,24 @@ public class Main {
     private static final String menu = "Enter action (1 - get the file, 2 - create a file, 3 - delete the file):";
     private static final String enterFileName = "Enter file name: ";
 
+    public static String getFileRequest(String fileName)
+    {
+        String result = "";
+        return result;
+    }
+
+    public static String deleteFileRequest(String fileName)
+    {
+        String result = "";
+        return result;
+    }
+
+    public static String putFileRequest(String fileName, String content)
+    {
+        String result = "";
+        return result;
+    }
+
 
     public static void main(String[] args) {
         boolean exitCode = false;
