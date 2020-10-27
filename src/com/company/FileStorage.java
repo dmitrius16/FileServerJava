@@ -1,38 +1,39 @@
 //package server;
 package com.company;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
-import java.io.File;
-import java.io.FileWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
 public class FileStorage {
     //private final String folderPath = "C:\\Users\\sysoevd\\IdeaProjects\\File Server\\File Server\\task\\src\\server\\data\\";
-    private final String folderPath = Paths.get("").toString(); //new modification
+    private final String folderPath = Paths.get("").toAbsolutePath().toString(); //new modification
     ///String s = currentRelativePath.toAbsolutePath().toString();
 
-    private List<String> fileNames = new LinkedList<>();
+    private IdToNameMapper fileNames; // = new IdToNameMapper();
     private String createFullPath(String fileName) {
-        return folderPath + fileName;
+        return folderPath + "\\" + fileName;
     }
     public FileStorage() {
         File folder = new File(folderPath);
-        if (folder.exists()) {
-            File[] lstFiles = folder.listFiles();
-            if (Objects.nonNull(lstFiles)) {
-                for (File file : lstFiles) {
-                    if (file.isFile())
-                        fileNames.add(file.getName());
-                }
-            }
-        } else {
-            folder.mkdirs();
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("id2map.dat"))) {
+            fileNames = (IdToNameMapper)ois.readObject();
+        } catch(Exception ex) {
+            System.out.println("Id2Map corrupted");
+            fileNames = new IdToNameMapper();
         }
     }
 
     public boolean isFileExists(String fileName) {
-        return fileNames.contains(fileName);
+        return fileNames.isExist(fileName);
+    }
+
+    public void saveFileNamesInfo() {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("id2map.dat"))) {
+            oos.writeObject(fileNames);
+        } catch (Exception ex) {
+            System.out.print("Can't save file names info. All data will be lost");
+        }
     }
 
     public ServerCode put(String fileName, String content) {
@@ -93,12 +94,7 @@ public class FileStorage {
             return this.content;
         }
     }
-/*
-    class IdToNameMapper {
-        private Map<Integer, String> id2name = new HashMap<>();
 
-    }
-*/
     public enum ServerCode {
         OK_CODE("200"),
         FILE_EXIST("403"),
