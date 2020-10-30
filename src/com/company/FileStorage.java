@@ -5,6 +5,35 @@ import java.util.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+enum ServerCode {
+    OK_CODE("200"),
+    FILE_EXIST("403"),
+    ERR_CODE("404");
+
+    private String repr;
+    ServerCode(String strVal) {repr = strVal;}
+    String getRepr() {return repr;}
+}
+
+class ServerRespond {
+    private ServerCode code;
+    private String additional_info;
+    public ServerRespond(ServerCode code) {
+        this.code = code;
+        this.additional_info = "";
+    }
+    public ServerRespond(ServerCode code, int id) {
+        this.code = code;
+        this.additional_info = Integer.toString(id);
+    }
+
+    ServerCode getCode() {return code;}
+
+    public String toString() {
+        return code.getRepr() + " " + additional_info;
+    }
+}
+
 public class FileStorage {
     //private final String folderPath = "C:\\Users\\sysoevd\\IdeaProjects\\File Server\\File Server\\task\\src\\server\\data\\";
     private final String folderPath = Paths.get("").toAbsolutePath().toString(); //new modification
@@ -24,8 +53,13 @@ public class FileStorage {
         }
     }
 
-    public boolean isFileExists(String fileName) {
+    public boolean isFileExists(String fileName)
+    {
         return fileNames.isExist(fileName);
+    }
+
+    public boolean isFileExists(int id) {
+        return fileNames.isExist(id);
     }
 
     public void saveFileNamesInfo() {
@@ -36,24 +70,27 @@ public class FileStorage {
         }
     }
 
-    public ServerCode put(String fileName, String content) {
+    public ServerRespond put(String fileName, String content) {
         //check if file exists
         ServerCode result = ServerCode.FILE_EXIST;
+        int id = 0;
         if (isFileExists(fileName) == false) {
             String fullFileName = createFullPath(fileName);
-            fileNames.add(fileName);
-            try (FileWriter fileWriter = new FileWriter(new File(fullFileName))) {
-                fileWriter.write(content);
-                result = ServerCode.OK_CODE;
-            }catch (IOException ex) {
-                ex.printStackTrace();
-                result = ServerCode.ERR_CODE;
+            id = fileNames.add(fileName);
+            if (id != 0) {
+                try (FileWriter fileWriter = new FileWriter(new File(fullFileName))) {
+                    fileWriter.write(content);
+                    result = ServerCode.OK_CODE;
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                    result = ServerCode.ERR_CODE;
+                }
             }
         }
-        return result;
+        return new ServerRespond(result, id);
     }
 
-    public ServerCode delete(String fileName) {
+    public ServerRespond delete(String fileName) {
         ServerCode result = ServerCode.ERR_CODE;
         if (isFileExists(fileName)) {
             File file = new File(createFullPath(fileName));
@@ -62,10 +99,10 @@ public class FileStorage {
                 result = ServerCode.OK_CODE;
             }
         }
-        return result;
+        return new ServerRespond(result);
     }
 
-    public ServerCode get(String fileName, FileContent content){
+    public ServerRespond get(String fileName, FileContent content) {
         ServerCode result = ServerCode.ERR_CODE;
         if (isFileExists(fileName)) {
             try {
@@ -75,7 +112,19 @@ public class FileStorage {
                 ex.printStackTrace();
             }
         }
-        return result;
+        return new ServerRespond(result);
+    }
+
+    public ServerRespond get(int id, FileContent content) {
+        return get(fileNames.getFileNameFromId(id), content);
+    }
+
+    public String getFileNameFromId(int id) {
+        return fileNames.getFileNameFromId(id);
+    }
+
+    public int getFileIdFromName(String name) {
+        return fileNames.getIdFromFileName(name);
     }
 
     public static class FileContent {
@@ -94,15 +143,4 @@ public class FileStorage {
             return this.content;
         }
     }
-
-    public enum ServerCode {
-        OK_CODE("200"),
-        FILE_EXIST("403"),
-        ERR_CODE("404");
-
-        private String repr;
-        ServerCode(String strVal) {repr = strVal;}
-        String getRepr() {return repr;}
-    }
-
 }
